@@ -23,16 +23,18 @@ EPOCH=60
 
 #x_test = LD.load_data('data', 'mfcc', 'test')
 #np.save('data/mfcc/test.npy', x_test)
-#x_train = LD.load_data('data', 'mfcc', 'train')
+mfcc_train = LD.load_data('data', 'mfcc', 'train')
+fbank_train = LD.load_data('data', 'fbank', 'train')
+
 #np.save('data/mfcc/train.npy', x_train)
-#y_train = LD.load_label('data', 'align_train.lab')
+y_train = LD.load_label('data', 'align_train.lab')
 #np.save('data/label/label.npy', y_train)
 
 INPUT_SIZE = 69+39
-mfcc_train = np.load('data/mfcc/train.npy')
-fbank_train = np.load('data/fbank/train.npy')
+#mfcc_train = np.load('data/mfcc/train.npy')
+#fbank_train = np.load('data/fbank/train.npy')
 x_train = np.concatenate((mfcc_train, fbank_train), axis=2)
-y_train = np.load('data/label/m_label.npy')
+#y_train = np.load('data/label/m_label.npy')
 
 print(x_train.shape)
 print(y_train.shape)
@@ -56,16 +58,16 @@ model.add(Dense(48, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam')
 print(model.summary())
 model_json = model.to_json()
-with open("rlB.json", "w") as json_file:
+with open("best.json", "w") as json_file:
     json_file.write(model_json)
 
-checkpoint = ModelCheckpoint(filepath='rlB', monitor='val_loss', save_best_only=True, mode='min')
+checkpoint = ModelCheckpoint(filepath='best.h5', monitor='val_loss', save_best_only=True, mode='min')
 callbacks_list = [checkpoint]
 
 hist = model.fit(x_train, y_train, epochs=EPOCH, batch_size=BATCH_SIZE, validation_split=0.15, callbacks=callbacks_list)
 
 # Final evaluation of the model
 
-with open('rlB.hist', 'a') as fp:
+with open('best.hist', 'a') as fp:
     fp.writelines('{}:{}\n'.format(k,v) for k,v in hist.history.items())
 
