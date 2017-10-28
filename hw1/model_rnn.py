@@ -26,7 +26,7 @@ EPOCH=40
 m_train = LD.load_data('data', 'mfcc', 'train')
 f_train = LD.load_data('data', 'fbank', 'train')
 #np.save('data/mfcc/train.npy', x_train)
-y_train = LD.load_label('data', 'align_train.lab')
+y_train = LD.load_label('./', 'align_train.lab')
 #np.save('data/label/label.npy', y_train)
 
 INPUT_SIZE=39+69
