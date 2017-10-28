@@ -23,17 +23,18 @@ EPOCH=40
 
 #x_test = LD.load_data('data', 'mfcc', 'test')
 #np.save('data/mfcc/test.npy', x_test)
-#x_train = LD.load_data('data', 'mfcc', 'train')
+m_train = LD.load_data('data', 'mfcc', 'train')
+f_train = LD.load_data('data', 'fbank', 'train')
 #np.save('data/mfcc/train.npy', x_train)
-#y_train = LD.load_label('data', 'align_train.lab')
+y_train = LD.load_label('data', 'align_train.lab')
 #np.save('data/label/label.npy', y_train)
 
 INPUT_SIZE=39+69
-m_train = np.load('../data/mfcc/train.npy')
-f_train = np.load('../data/fbank/train.npy')
+#m_train = np.load('../data/mfcc/train.npy')
+#f_train = np.load('../data/fbank/train.npy')
 x_train = np.concatenate((m_train, f_train), axis=2)
 
-y_train = np.load('../data/label/m_label.npy')
+#y_train = np.load('../data/label/m_label.npy')
 #y_train = np.delete(y_train, np.s_[-2:], 1)
 print(x_train.shape)
 print(y_train.shape)

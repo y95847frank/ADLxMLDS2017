@@ -23,26 +23,27 @@ EPOCH=40
 
 #x_test = LD.load_data('data', 'mfcc', 'test')
 #np.save('data/mfcc/test.npy', x_test)
-#x_train = LD.load_data('data', 'mfcc', 'train')
+m_train = LD.load_data('data', 'mfcc', 'train')
+f_train = LD.load_data('data', 'fbank', 'train')
 #np.save('data/mfcc/train.npy', x_train)
-#y_train = LD.load_label('data', 'align_train.lab')
+y_train = LD.load_label('data', 'align_train.lab')
 #np.save('data/label/label.npy', y_train)
 
 INPUT_SIZE=39+69
-m_train = np.load('data/mfcc/train.npy')
-f_train = np.load('data/fbank/train.npy')
+#m_train = np.load('data/mfcc/train.npy')
+#f_train = np.load('data/fbank/train.npy')
 x_train = np.concatenate((m_train, f_train), axis=2)
 
-y_train = np.load('data/label/m_label.npy')
+#y_train = np.load('data/label/m_label.npy')
 
-print(x_train.shape)
-print(y_train.shape)
+#print(x_train.shape)
+#print(y_train.shape)
 
 model = Sequential()
 model.add(LSTM(64, return_sequences=True, batch_input_shape=(BATCH_SIZE, TIME_STEP, INPUT_SIZE)))
 model.add(Dense(48, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-print(model.summary())
+#print(model.summary())
 model_json = model.to_json()
 with open("rnn.json", "w") as json_file:
     json_file.write(model_json)
