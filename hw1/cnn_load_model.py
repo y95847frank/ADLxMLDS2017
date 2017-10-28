@@ -16,6 +16,8 @@ m_test = LD.load_data(sys.argv[4], 'mfcc', 'test')
 f_test = LD.load_data(sys.argv[4], 'fbank', 'test')
 
 x_test = np.concatenate((m_test, f_test), axis=2)
+x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], x_test.shape[2], 1)
+#print x_test.shape
 # load weights into new model
 json_file = open(sys.argv[1], 'r')
 loaded_model_json = json_file.read()
