@@ -10,7 +10,7 @@ import json
 import csv
 import sys
 import os
-
+import pickle
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -21,7 +21,6 @@ use_cuda = torch.cuda.is_available()
 
 SOS_token = 0
 EOS_token = 1
-
 class Label:
     def __init__(self, name):
         self.name = name
@@ -45,44 +44,20 @@ class Label:
         else:
             self.word2count[word] += 1
 
-def unicodeToAscii(s):
-    return ''.join(
-        c for c in unicodedata.normalize('NFD', s)
-        if unicodedata.category(c) != 'Mn'
-    )
-
-def normalizeString(s):
-    s = unicodeToAscii(s.lower().strip())
-    s = re.sub(r"([.!?])", r" \1", s)
-    s = re.sub(r"[^a-zA-Z.!?]+", r" ", s)
-    return s
-
-def get_data(video_label_path, video_feat_path, test_id,  word_count_threshold=0):
-
-    captions = []
+def get_data(video_feat_path, test_id):
     pairs = []
-    fp = open(video_label_path, 'r')
     fid = open(test_id, 'r')
     id_list = fid.readlines()
-    label = json.load(fp)
-    for d in label:
-        captions += [normalizeString(x) for x in d['caption']]
+    
     for i in id_list:
         pairs.append(np.load(video_feat_path+i[:-1]+'.npy'))
-    print("Read %s sentence" % len(captions))
-    output_lang = Label('train')
-    for cap in captions:
-        output_lang.addSentence(cap)
-    print("Counted words:")
-    print(output_lang.name, output_lang.n_words)
-
-    return output_lang, pairs
-
+    return pairs
 
 print("reading data!")
 MAX_LENGTH = 80
 data_path = sys.argv[1]
-output_lang, pairs = get_data(os.path.join(data_path, 'training_label.json'), os.path.join(data_path, 'testing_data', 'feat/'), sys.argv[2])
+pairs = get_data(os.path.join(data_path, 'testing_data', 'feat/'), sys.argv[2])
+output_lang = pickle.load(open('lang_2.obj', 'rb'))
 
 def feat2variable(feat):
     result = Variable(torch.FloatTensor(feat))
