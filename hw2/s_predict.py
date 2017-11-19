@@ -53,7 +53,6 @@ def get_data(video_feat_path, test_id):
         pairs.append(np.load(video_feat_path+i[:-1]+'.npy'))
     return pairs
 
-print("reading data!")
 MAX_LENGTH = 80
 data_path = sys.argv[1]
 pairs = get_data(os.path.join(data_path, 'testing_data', 'feat/'), sys.argv[2])
