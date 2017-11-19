@@ -6,3 +6,6 @@
 ## HW 2 - Video Captioning
 #### Code Deadline : 11/19/2017 23:59
 #### Info : https://www.csie.ntu.edu.tw/~yvchen/f106-adl/A2
+## HW 3 - Game Playing
+#### Code Deadline : 12/16/2017 23:59
+#### Info : https://www.csie.ntu.edu.tw/~yvchen/f106-adl/A3
