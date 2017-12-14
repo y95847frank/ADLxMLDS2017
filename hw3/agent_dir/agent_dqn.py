@@ -101,7 +101,7 @@ class Agent_DQN(Agent):
             config = tf.ConfigProto()
             config.gpu_options.allow_growth = True
             self.sess = tf.Session(config=config)
-            self.saver.restore(self.sess, save_path = 'save/Breakout.ckpt-110')
+            self.saver.restore(self.sess, save_path = 'breakout/Breakout.ckpt-172')
         
 
 
