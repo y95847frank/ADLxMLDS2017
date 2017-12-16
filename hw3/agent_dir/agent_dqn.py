@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 from collections import deque
 
 MINIBATCH = 32
-# 리플레이를 저장할 리스트
 REPLAY_MEMORY = deque()
 
 HISTORY_STEP =4
@@ -31,7 +30,6 @@ OUTPUT = 3
 HEIGHT =84
 WIDTH = 84
 
-# 하이퍼파라미터
 LEARNING_RATE = 0.0001
 
 DISCOUNT = 0.99
@@ -64,7 +62,6 @@ class Agent_DQN(Agent):
             print('loading trained model')
             self.X = tf.placeholder("float", [None, 84, 84, 4])
 
-            # 메인 네트워크 Variable
             f1 = tf.get_variable("f1", shape=[8,8,4,32], initializer=tf.contrib.layers.xavier_initializer_conv2d())
             f2 = tf.get_variable("f2", shape=[4,4,32,64], initializer=tf.contrib.layers.xavier_initializer_conv2d())
             f3 = tf.get_variable("f3", shape=[3,3,64,64], initializer=tf.contrib.layers.xavier_initializer_conv2d())
@@ -74,7 +71,6 @@ class Agent_DQN(Agent):
 
             self.py_x = model(self.X, f1, f2, f3 , w1, w2)
 
-            # 타겟 네트워크 Variable
             f1_r = tf.get_variable("f1_r", shape=[8,8,4,32], initializer=tf.contrib.layers.xavier_initializer_conv2d())
             f2_r = tf.get_variable("f2_r", shape=[4,4,32,64], initializer=tf.contrib.layers.xavier_initializer_conv2d())
             f3_r = tf.get_variable("f3_r", shape=[3,3,64,64], initializer=tf.contrib.layers.xavier_initializer_conv2d())
@@ -83,7 +79,6 @@ class Agent_DQN(Agent):
             w2_r = tf.get_variable("w2_r", shape=[512, OUTPUT], initializer=tf.contrib.layers.xavier_initializer())
 
             py_x_r = model(self.X, f1_r, f2_r,f3_r, w1_r, w2_r)
-            # Loss function 정의
             a= tf.placeholder(tf.int64, [None])
             y = tf.placeholder(tf.float32, [None])
             a_one_hot = tf.one_hot(a, OUTPUT, 1.0, 0.0)
@@ -128,7 +123,6 @@ class Agent_DQN(Agent):
         e = 1.
         X = tf.placeholder("float", [None, 84, 84, 4])
 
-        # 메인 네트워크 Variable
         f1 = tf.get_variable("f1", shape=[8,8,4,32], initializer=tf.contrib.layers.xavier_initializer_conv2d())
         f2 = tf.get_variable("f2", shape=[4,4,32,64], initializer=tf.contrib.layers.xavier_initializer_conv2d())
         f3 = tf.get_variable("f3", shape=[3,3,64,64], initializer=tf.contrib.layers.xavier_initializer_conv2d())
@@ -138,7 +132,6 @@ class Agent_DQN(Agent):
 
         py_x = model(X, f1, f2, f3 , w1, w2)
 
-        # 타겟 네트워크 Variable
         f1_r = tf.get_variable("f1_r", shape=[8,8,4,32], initializer=tf.contrib.layers.xavier_initializer_conv2d())
         f2_r = tf.get_variable("f2_r", shape=[4,4,32,64], initializer=tf.contrib.layers.xavier_initializer_conv2d())
         f3_r = tf.get_variable("f3_r", shape=[3,3,64,64], initializer=tf.contrib.layers.xavier_initializer_conv2d())
@@ -148,7 +141,6 @@ class Agent_DQN(Agent):
 
         py_x_r = model(X, f1_r, f2_r,f3_r, w1_r, w2_r)
 
-        # 총 Reward를 저장해놓을 리스트
         rlist=[0]
         recent_rlist=[0]
 
@@ -161,7 +153,6 @@ class Agent_DQN(Agent):
         average_reward = deque()
         no_life_game = False
 
-        # Loss function 정의
         a= tf.placeholder(tf.int64, [None])
         y = tf.placeholder(tf.float32, [None])
         a_one_hot = tf.one_hot(a, OUTPUT, 1.0, 0.0)
@@ -177,13 +168,11 @@ class Agent_DQN(Agent):
 
         saver = tf.train.Saver(max_to_keep=None)
 
-        # 세션 정의
         fp = open('reward_breakout.log', 'a')
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         with tf.Session(config=config) as sess:
             saver.restore(sess, save_path = 'save/Breakout.ckpt-95')
-            # 변수 초기화
             sess.run(tf.global_variables_initializer())
             sess.run(w1_r.assign(w1))
             sess.run(w2_r.assign(w2))
@@ -191,11 +180,9 @@ class Agent_DQN(Agent):
             sess.run(f2_r.assign(f2))
             sess.run(f3_r.assign(f3))
 
-            # 에피소드 시작
             while np.mean(recent_rlist) < 500 :
                 episode += 1
 
-                # 가장 최근의 100개 episode의 total reward
                 if len(recent_rlist) > 100:
                     del recent_rlist[0]
 
@@ -207,10 +194,8 @@ class Agent_DQN(Agent):
                 avg_max_Q = 0
                 avg_loss = 0
 
-                # 에피소드가 끝나기 전까지 반복
                 while not d :
                     # env.render()
-                    # 최근 4개의 프레임을 현재 프레임으로 바꿔줌
 
                     frame +=1
                     count+=1
@@ -218,7 +203,6 @@ class Agent_DQN(Agent):
                     if e > FINAL_EXPLORATION and frame > TRAIN_START:
                         e -= 4 * (START_EXPLORATION - FINAL_EXPLORATION) / EXPLORATION
 
-                    # 현재 state로 Q값을 계산
                     state = np.reshape(s, (1, 84, 84, 4))
                     Q = sess.run(py_x, feed_dict = {X : state})
                     average_Q.append(np.max(Q))
@@ -236,8 +220,6 @@ class Agent_DQN(Agent):
                     else:
                         real_a = 3
 
-
-                    # 결정된 action으로 Environment에 입력
                     s1, r, d, l = self.env.step(real_a)
                     ter = d
                     reward= np.clip(r, -1,1)
@@ -246,13 +228,10 @@ class Agent_DQN(Agent):
 
                     s = s1
 
-                    # 저장된 Frame이 1백만개 이상 넘어가면 맨 앞 Replay부터 삭제
                     if len(REPLAY_MEMORY) > MEMORY_SIZE:
                         REPLAY_MEMORY.popleft()
-                    # 총 reward 합
                     rall += r
 
-                    # 5만 frame 이상부터 4개의 Frame마다 학습
                     if frame > TRAIN_START and frame % UPDATE == 0:
                         s_stack = deque()
                         a_stack = deque()
@@ -276,10 +255,8 @@ class Agent_DQN(Agent):
 
                         y_stack = r_stack + (1 - d_stack) * DISCOUNT * np.max(Q1, axis=1)
 
-                        # 업데이트 된 Q값으로 main네트워크를 학습
                         sess.run(train, feed_dict={X: np.array(s_stack), y: y_stack, a: a_stack})
 
-                        # 3만개의 Frame마다 타겟 네트워크 업데이트
                         if frame % TARGET_UPDATE == 0 :
                             sess.run(w1_r.assign(w1))
                             sess.run(w2_r.assign(w2))
@@ -287,7 +264,6 @@ class Agent_DQN(Agent):
                             sess.run(f2_r.assign(f2))
                             sess.run(f3_r.assign(f3))
 
-                    # epoch(50000 Trained frame) 마다 plot
                     if (frame - TRAIN_START) % 50000 == 0:
                         epoch_on = True
 
@@ -303,7 +279,6 @@ class Agent_DQN(Agent):
                     save_path = saver.save(sess, model_path, global_step=(epoch-1))
                     print("Model(episode :",episode, ") saved in file: ", save_path , " Now time : " ,datetime.datetime.now())
 
-                # 총 reward의 합을 list에 저장
                 recent_rlist.append(rall)
                 rlist.append(rall)
                 average_reward.append(rall)
