@@ -11,7 +11,7 @@ class Agent_PG(Agent):
         """
 
         super(Agent_PG,self).__init__(env)
-
+        tf.reset_default_graph()
         # hyperparameters
         self.n_obs = 80 * 80           # dimensionality of observations
         self.h = 200                   # number of hidden layer neurons

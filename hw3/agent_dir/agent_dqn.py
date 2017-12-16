@@ -57,6 +57,7 @@ class Agent_DQN(Agent):
 
         ##################
         # YOUR CODE HERE #
+        tf.reset_default_graph()
         if args.test_dqn:
             #you can load your model here
             print('loading trained model')
