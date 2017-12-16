@@ -9,3 +9,6 @@
 ## HW 3 - Game Playing
 #### Code Deadline : 12/16/2017 23:59
 #### Info : https://www.csie.ntu.edu.tw/~yvchen/f106-adl/A3
+## HW 4 - Generative Adversarial Networks
+#### Code Deadline : 12/31/2017 23:59
+#### Info : https://www.csie.ntu.edu.tw/~yvchen/f106-adl/A4
