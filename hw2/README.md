@@ -10,5 +10,5 @@ $3: peer review output filename
 ---
 ### P.S.
 * My training code is `model_seq2seq.py`.<br>
-* All the model store in `model/`.<br>
+* All model stores in `model/`.<br>
 * Use `pytorch 0.1.9`<br>
