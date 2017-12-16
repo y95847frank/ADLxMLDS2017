@@ -5,7 +5,6 @@ import gym
 import numpy as np
 import random as ran
 import datetime
-import matplotlib.pyplot as plt
 
 from collections import deque
 
