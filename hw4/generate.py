@@ -221,10 +221,15 @@ if __name__ == '__main__':
     generator = G_conv()
     discriminator = D_conv()
 
-    train_X = np.load('data/img.npy')
-    train_y = np.load('data/text.npy')
+    try:
+        train_X = np.load('data/img.npy')
+        train_y = np.load('data/text.npy')
 
-    test_y = np.load('data/special_text.npy')
+        test_y = np.load('data/special_text.npy')
+    except:
+        train_X = []
+        train_y = []
+        test_y = []
     # run
     wgan_c = WGAN(generator, discriminator, train_X, train_y, test_y, 'trained_model')
     if sys.argv[1] == 'test':
