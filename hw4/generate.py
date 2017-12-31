@@ -215,8 +215,8 @@ if __name__ == '__main__':
     # save generated images
     sample_dir = 'wgraph/'
 
-    if not os.path.exists(sample_dir):
-        os.makedirs(sample_dir)
+    #if not os.path.exists(sample_dir):
+    #    os.makedirs(sample_dir)
     # param
     generator = G_conv()
     discriminator = D_conv()
