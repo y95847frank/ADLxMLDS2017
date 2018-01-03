@@ -196,7 +196,7 @@ class ACGAN():
         if not os.path.exists('samples'):
             os.makedirs('samples')
         for i in range(5):
-            tf.set_random_seed(666+i*10)
+            tf.set_random_seed(6+(i+1)*100)
             samples = self.sess.run(self.G_sample, feed_dict={self.fy: y_s, self.z: z})
             for (c,s) in zip(ID, samples):
                 scipy.misc.imsave('samples/sample_{}_{}.png'.format(c, i+1), s)
