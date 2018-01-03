@@ -10,6 +10,7 @@ import datetime
 from util import gen_test
 import scipy.misc
 tf.set_random_seed(666)
+
 def leaky_relu(x, alpha=0.2):
     return tf.maximum(tf.minimum(0.0, alpha * x), x
 )
