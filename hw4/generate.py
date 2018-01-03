@@ -9,7 +9,7 @@ import time
 import datetime
 from util import gen_test
 import scipy.misc
-
+tf.set_random_seed(666)
 def leaky_relu(x, alpha=0.2):
     return tf.maximum(tf.minimum(0.0, alpha * x), x
 )
@@ -190,17 +190,18 @@ class ACGAN():
         self.saver.restore(self.sess, os.path.join(self.ckpt_dir, ckpt_name))
         print(" [*] Success to read {}".format(ckpt_name))
         ID, y_s = gen_test(path)
-        z = np.load('fixed_z.npy')
-        #z = sample_z(y_s.shape[0], self.z_dim)
-        #np.save('fixed_z.npy', z)
+        #z = np.load('fixed_z.npy')
+        z = []
+        for i in range(5):
+            z.append(sample_z(y_s.shape[0], self.z_dim))
+        z = np.asarray(z)
+        np.save('fixed_z.npy', z)
         if not os.path.exists('samples'):
             os.makedirs('samples')
         for i in range(5):
-            #tf.set_random_seed(6+(i+1)*100)
-            samples = self.sess.run(self.G_sample, feed_dict={self.fy: y_s, self.z: z})
+            samples = self.sess.run(self.G_sample, feed_dict={self.fy: y_s, self.z: z[i]})
             for (c,s) in zip(ID, samples):
                 scipy.misc.imsave('samples/sample_{}_{}.png'.format(c, i+1), s)
-                #skimage.io.imsave('samples/sample_{}_{}.png'.format(c, i+1), s)
 
     def train(self, sample_dir, training_epoches = 1000000, batch_size = 64):
         fig_count = 0
