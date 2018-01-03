@@ -35,16 +35,17 @@ class G_conv(object):
         with tf.variable_scope(self.name) as scope:
             g = tcl.fully_connected(z, self.size * self.size * 256, activation_fn=tf.nn.relu, normalizer_fn=tcl.batch_norm)
             g = tf.reshape(g, (-1, self.size, self.size, 256))  # size
-            g = tcl.conv2d_transpose(g, 128, 5, stride=2, # size*2
-                                    activation_fn=tf.nn.relu, normalizer_fn=tcl.batch_norm, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.02))
-            g = tcl.conv2d_transpose(g, 64, 5, stride=2, # size*4
-                                    activation_fn=tf.nn.relu, normalizer_fn=tcl.batch_norm, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.02))
-            g = tcl.conv2d_transpose(g, 32, 5, stride=2, # size*8
-                                    activation_fn=tf.nn.relu, normalizer_fn=tcl.batch_norm, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.02))
+            g = tcl.conv2d_transpose(g, 256, 5, stride=2, # size*2
+                                    activation_fn=tf.nn.relu, normalizer_fn=tcl.batch_norm, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.04))
+            g = tcl.conv2d_transpose(g, 128, 5, stride=2, # size*4
+                                    activation_fn=tf.nn.relu, normalizer_fn=tcl.batch_norm, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.04))
+            g = tcl.conv2d_transpose(g, 64, 5, stride=2, # size*8
+                                    activation_fn=tf.nn.relu, normalizer_fn=tcl.batch_norm, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.04))
             
-            g = tcl.conv2d_transpose(g, self.channel, 5, stride=2, # size*16
-                                        activation_fn=tf.nn.sigmoid, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.02))
+            g = tcl.conv2d_transpose(g, self.channel, 3, stride=2, # size*16
+                                        activation_fn=tf.nn.sigmoid, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.04))
             return g
+
     @property
     def vars(self):
         return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
@@ -69,24 +70,43 @@ class D_conv(object):
 
             shared = tcl.flatten(shared)
     
-            d = tcl.fully_connected(shared, 1, activation_fn=None, weights_initializer=tf.random_normal_initializer(0, 0.02))
-            q = tcl.fully_connected(shared, 128, activation_fn=lrelu, normalizer_fn=tcl.batch_norm)
-            q = tcl.fully_connected(q, 23, activation_fn=None) # 10 classes
-            return d, q
+            net = tcl.fully_connected(shared, 23, activation_fn=lrelu)
+            x = tcl.fully_connected(shared, 1, activation_fn=None)
+            return x, net
             
     @property
     def vars(self):
         return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
 
+'''
+class C_conv(object):
+    def __init__(self):
+        self.name = 'C_conv'
+
+    def __call__(self, x, reuse=False):
+        with tf.variable_scope(self.name) as scope:
+            if reuse:
+                scope.reuse_variables()
+            x = tcl.fully_connected(x, 256, activation_fn=lrelu)
+            x = tcl.fully_connected(x, 23, activation_fn=lrelu)
+            return x
+            
+    @property
+    def vars(self):
+        return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
+'''
 
 def sample_z(m, n):
     return np.random.uniform(-1., 1., size=[m, n])
 
 # for test
-def sample_y(m, n, ind):
+def sample_y(m, n):
     y = np.zeros([m,n])
-    for i in range(m):
-        y[i,i/4] = 1
+    idx1 = np.random.random_integers(0, 11, size=(m,))
+    idx2 = np.random.random_integers(12, n - 1, size=(m,))
+    y[np.arange(m), idx1] = 1
+    y[np.arange(m), idx2] = 1
+
     return y
 
 def concat(z,y):
@@ -100,7 +120,7 @@ def conv_concat(x,y):
 def concat(z,y):
     return tf.concat([z,y],1)
 
-class WGAN():
+class ACGAN():
     def __init__(self, generator, discriminator, train_X, train_y, test_y, ckpt):
         self.generator = generator
         self.discriminator = discriminator
@@ -117,26 +137,46 @@ class WGAN():
         self.X = tf.placeholder(tf.float32, shape=[None, self.size, self.size, self.channel])
         self.z = tf.placeholder(tf.float32, shape=[None, self.z_dim])
         self.y = tf.placeholder(tf.float32, shape=[None, self.y_dim])
+        self.fy = tf.placeholder(tf.float32, shape=[None, self.y_dim])
 
         # nets
-        self.G_sample = self.generator(concat(self.z, self.y))
+        self.G_sample  = self.generator(concat(self.z, self.fy))
 
-        self.D_real, _ = self.discriminator(conv_concat(self.X, self.y))
-        self.D_fake, _ = self.discriminator(conv_concat(self.G_sample, self.y), reuse = True)
+        self.D_real, self.d_real_tag = self.discriminator(self.X)
+        self.D_fake, self.d_fake_tag = self.discriminator(self.G_sample , reuse = True)
         
         # loss
-        self.D_loss = - tf.reduce_mean(self.D_real) + tf.reduce_mean(self.D_fake)
-        self.G_loss = - tf.reduce_mean(self.D_fake)
-        #self.D_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_real, labels=tf.ones_like(self.D_real))) + tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake, labels=tf.zeros_like(self.D_fake)))
-        #self.G_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake, labels=tf.ones_like(self.D_fake)))
-
-        # solver
-        self.D_solver = tf.train.RMSPropOptimizer(learning_rate=1e-4).minimize(self.D_loss, var_list=self.discriminator.vars)
-        self.G_solver = tf.train.RMSPropOptimizer(learning_rate=1e-4).minimize(self.G_loss, var_list=self.generator.vars)
-
-        self.clip_D = [var.assign(tf.clip_by_value(var, -0.01, 0.01)) for var in self.discriminator.vars]
+        self.d_real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_real,
+                                                                             labels=tf.ones_like(self.D_real)))
+        self.d_real_tag_loss = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_tag, labels=self.y),axis=1))
         
-        self.saver = tf.train.Saver(max_to_keep=10)
+        self.d_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake,
+                                                                             labels=tf.zeros_like(self.D_fake)))
+        self.d_fake_tag_loss = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_tag, labels=self.fy),axis=1))
+        epi = tf.random_uniform([], 0.0, 1.0)
+        x_hat = epi*self.X + (1-epi) * self.G_sample
+        d_hat, _ = self.discriminator(x_hat, reuse=True)
+
+        ddx = tf.gradients(d_hat, x_hat)[0]
+        ddx = tf.sqrt(tf.reduce_sum(tf.square(ddx), axis=1))
+        ddx = tf.reduce_mean(tf.square(ddx-1.0)*10)
+
+        self.Dr_loss = 5 * self.d_real_loss + self.d_real_tag_loss
+        self.Df_loss = 5 * self.d_fake_loss + self.d_fake_tag_loss
+        self.D_loss = self.Dr_loss + self.Df_loss + ddx
+
+        loss_g = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake, labels=tf.ones_like(self.D_fake)))
+        loss_g_tag = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_tag, labels=self.fy), axis=1))
+
+        self.G_loss = 5 * loss_g + loss_g_tag
+
+
+        adam_lr = 0.0002
+        adam_beta_1 = 0.5
+        self.D_solver = tf.train.AdamOptimizer(learning_rate=adam_lr, beta1=adam_beta_1, beta2=0.9).minimize(self.D_loss, var_list=self.discriminator.vars)
+        self.G_solver = tf.train.AdamOptimizer(learning_rate=adam_lr, beta1=adam_beta_1, beta2=0.9).minimize(self.G_loss, var_list=self.generator.vars)
+        
+        self.saver = tf.train.Saver(max_to_keep=30)
         gpu_options = tf.GPUOptions(allow_growth=True)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
 
@@ -153,7 +193,7 @@ class WGAN():
         if not os.path.exists('samples'):
             os.makedirs('samples')
         for i in range(5):
-            samples = self.sess.run(self.G_sample, feed_dict={self.y: y_s, self.z: sample_z(y_s.shape[0], self.z_dim)})
+            samples = self.sess.run(self.G_sample, feed_dict={self.fy: y_s, self.z: sample_z(y_s.shape[0], self.z_dim)})
             for (c,s) in zip(ID, samples):
                 scipy.misc.imsave('samples/sample_{}_{}.png'.format(c, i+1), s)
                 #skimage.io.imsave('samples/sample_{}_{}.png'.format(c, i+1), s)
@@ -166,73 +206,70 @@ class WGAN():
         counter = 0
         nb_batches = int(self.train_X.shape[0] / batch_size)
         t0 = time.time()
-        
+        d_overpowered = False
         for epoch in range(training_epoches):
             # update D
             
             #X_b,y_b = self.data(batch_size)
-            n_d = 100 if epoch < 50 or (epoch+1) % 500 == 0 else 5
-            for _ in range(n_d):
-            	
-                index = counter % nb_batches
-                counter += 1
-                X_b = self.train_X[index * batch_size:(index + 1) * batch_size]
-                y_b = self.train_y[index * batch_size:(index + 1) * batch_size]
+            #n_d = 100 if epoch < 25 or (epoch+1) % 500 == 0 else 5
+                
+            index = counter % nb_batches
+            counter += 1
+            X_b = self.train_X[index * batch_size:(index + 1) * batch_size]
+            y_b = self.train_y[index * batch_size:(index + 1) * batch_size]
 
-                self.sess.run(self.clip_D)
-                self.sess.run(
-                    self.D_solver,
-                    feed_dict={self.X: X_b, self.y: y_b, self.z: sample_z(batch_size, self.z_dim)}
-                )
+            self.sess.run(
+                [self.D_solver], 
+                feed_dict={self.X: X_b, self.y: y_b, self.z: sample_z(batch_size, self.z_dim), self.fy: sample_y(batch_size, self.y_dim)}
+            )
             # update G
-            k = 1
-            for _ in range(k):
-                self.sess.run(
-                    self.G_solver,
-                    feed_dict={self.y:y_b, self.z: sample_z(batch_size, self.z_dim)}
-                )
+            
+            index = counter % nb_batches
+            counter += 1
+            X_b = self.train_X[index * batch_size:(index + 1) * batch_size]
+            y_b = self.train_y[index * batch_size:(index + 1) * batch_size]
+
+            self.sess.run(
+                [self.G_solver], 
+                feed_dict={self.X: X_b, self.y: y_b, self.z: sample_z(batch_size, self.z_dim), self.fy: sample_y(batch_size, self.y_dim)}
+            )
+
             
             # save img, model. print loss
             if epoch % 500 == 0 or epoch < 100:
-                D_loss_curr = self.sess.run(
-                        self.D_loss,
-                        feed_dict={self.X: X_b, self.y: y_b, self.z: sample_z(batch_size, self.z_dim)})
-                G_loss_curr = self.sess.run(
-                        self.G_loss,
-                        feed_dict={self.y: y_b, self.z: sample_z(batch_size, self.z_dim)})
-                print('Iter: {}; D loss: {:.4}; G_loss: {:.4}; {}'.format(epoch, D_loss_curr, G_loss_curr, ((str(datetime.datetime.now())).split(' ')[1]).split('.')[0]))
+                d_loss, g_loss = self.sess.run(
+                    [self.D_loss, self.G_loss], 
+                    feed_dict={self.X: X_b, self.y: y_b, self.z: sample_z(batch_size, self.z_dim), self.fy: sample_y(batch_size, self.y_dim)}
+                )
+
+                print('Iter: {}; D loss: {:.4}; G_loss: {:.4}; {}'.format(epoch, d_loss, g_loss, ((str(datetime.datetime.now())).split(' ')[1]).split('.')[0]))
 
                 if epoch % 1000 == 0:
                     y_s = self.test_y
-                    samples = self.sess.run(self.G_sample, feed_dict={self.y: y_s, self.z: sample_z(1, self.z_dim)})
-                    skimage.io.imsave(os.path.join(sample_dir,'epoch_{0:03d}_generated.png'.format(epoch)), samples[0])
-
-                if epoch % 1000 == 0:
-                    self.saver.save(self.sess, os.path.join(self.ckpt_dir, "wgan_conv_{0:03d}.ckpt").format(epoch))
+                    samples = self.sess.run(self.G_sample, feed_dict={self.fy: y_s, self.z: sample_z(1, self.z_dim)})
+                    scipy.misc.imsave(os.path.join(sample_dir,'epoch_{0:03d}_generated.png'.format(epoch)), samples[0])
+                    self.saver.save(self.sess, os.path.join(self.ckpt_dir, "acgan_conv_{0:03d}.ckpt").format(epoch))
 
 
 if __name__ == '__main__':
     # save generated images
-    sample_dir = 'wgraph/'
+    sample_dir = 'gp_ac_wgraph/'
 
-    #if not os.path.exists(sample_dir):
-    #    os.makedirs(sample_dir)
+    if not os.path.exists(sample_dir):
+        os.makedirs(sample_dir)
     # param
     generator = G_conv()
     discriminator = D_conv()
+    #classifier = C_conv()
+    '''
+    train_X = np.load('data/img.npy')
+    train_y = np.load('data/text.npy')
 
-    try:
-        train_X = np.load('data/img.npy')
-        train_y = np.load('data/text.npy')
-
-        test_y = np.load('data/special_text.npy')
-    except:
-        train_X = []
-        train_y = []
-        test_y = []
+    test_y = np.load('data/special_text.npy')
+    '''
     # run
-    wgan_c = WGAN(generator, discriminator, train_X, train_y, test_y, 'trained_model')
+    acgan = ACGAN(generator, discriminator, train_X, train_y, test_y, 'trained_model')
     if sys.argv[1] == 'test':
-        wgan_c.test(sys.argv[2])
+        acgan.test(sys.argv[2])
     else:
-        wgan_c.train(sample_dir)
+        acgan.train(sample_dir)
