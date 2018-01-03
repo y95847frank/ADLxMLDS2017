@@ -261,12 +261,10 @@ if __name__ == '__main__':
     generator = G_conv()
     discriminator = D_conv()
     #classifier = C_conv()
-    '''
-    train_X = np.load('data/img.npy')
-    train_y = np.load('data/text.npy')
+    train_X = []
+    train_y = []
 
-    test_y = np.load('data/special_text.npy')
-    '''
+    test_y = []
     # run
     acgan = ACGAN(generator, discriminator, train_X, train_y, test_y, 'trained_model')
     if sys.argv[1] == 'test':
