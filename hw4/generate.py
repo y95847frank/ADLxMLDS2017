@@ -190,12 +190,14 @@ class ACGAN():
         self.saver.restore(self.sess, os.path.join(self.ckpt_dir, ckpt_name))
         print(" [*] Success to read {}".format(ckpt_name))
         ID, y_s = gen_test(path)
-        #z = np.load('fixed_z.npy')
+        z = np.load('fixed_z.npy')
+        '''
         z = []
         for i in range(5):
             z.append(sample_z(y_s.shape[0], self.z_dim))
         z = np.asarray(z)
         np.save('fixed_z.npy', z)
+        '''
         if not os.path.exists('samples'):
             os.makedirs('samples')
         for i in range(5):
