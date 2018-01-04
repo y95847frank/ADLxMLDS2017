@@ -194,11 +194,12 @@ class ACGAN():
         z = np.load('fixed_z.npy')
         '''
         z = []
-        for i in range(5):
+        for i in range(100):
             z.append(sample_z(y_s.shape[0], self.z_dim))
         z = np.asarray(z)
         np.save('fixed_z.npy', z)
         '''
+        
         if not os.path.exists('samples'):
             os.makedirs('samples')
         for i in range(5):
@@ -262,9 +263,10 @@ class ACGAN():
 if __name__ == '__main__':
     # save generated images
     sample_dir = 'gp_ac_wgraph/'
-
+    '''
     if not os.path.exists(sample_dir):
         os.makedirs(sample_dir)
+    '''
     # param
     generator = G_conv()
     discriminator = D_conv()
